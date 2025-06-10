@@ -7,14 +7,21 @@ module.exports = {
         fields: ["_id", "name", "description", "ownerId", "createdAt", "updatedAt"],
         entityValidator: {
             name: { type: "string", min: 3 },
-            description: { type: "string", optional: true }
+            description: { type: "string", optional: true },
+            ownerId:{
+                type: "custom",
+                check(value) {
+                    if (!ObjectId.isValid(value)) throw new Error("Invalid ownerId");
+                    return true;
+                }
+            }
         }
     },
     hooks: {
         before: {
             create: [
                 function setOwner(ctx) {
-                    ctx.params.ownerId = ctx.meta.user._id;
+                    ctx.params.ownerId = new ObjectId(ctx.meta.user._id); // Set ownerId to the current user's ID
                     // ctx.params.createdAt = new Date();
                     // ctx.params.updatedAt = new Date();
                 }
@@ -107,7 +114,7 @@ module.exports = {
     methods: {
         canAccess(project, user) {
           if (user.role === "admin") return true;
-          return project.ownerId === user._id;
+          return project.ownerId.toString() === user._id;
         }
     }
 }
